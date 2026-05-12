@@ -15,12 +15,22 @@ const NewBookingModal = ({ isOpen, onClose, initialData, accommodations, onAddBo
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     guestName: '',
-    pax: '',
+    contactNumber: '',
+    address: '',
+    adultCount: '',
+    minorCount: '',
+    amountPaid: '',
+    paymentMode: 'cash',
+    referenceNo: '',
+    request: '',
+    remarks: '',
     type: initialData?.type || 'DAYTOUR',
     roomId: initialData?.roomId || '',
     bookingSource: 'RESERVATION',
     date: new Date().toISOString().split('T')[0],
     eta: '',
+    checkOutDate: '',
+    checkOutTime: '',
   });
 
   useEffect(() => {
@@ -28,12 +38,22 @@ const NewBookingModal = ({ isOpen, onClose, initialData, accommodations, onAddBo
       setFormData(prev => ({
         ...prev,
         guestName: '',
-        pax: '',
+        contactNumber: '',
+        address: '',
+        adultCount: '',
+        minorCount: '',
+        amountPaid: '',
+        paymentMode: 'cash',
+        referenceNo: '',
+        request: '',
+        remarks: '',
         type: initialData?.type || 'DAYTOUR',
         roomId: initialData?.roomId || '',
         bookingSource: 'RESERVATION',
         date: new Date().toISOString().split('T')[0],
         eta: '',
+        checkOutDate: '',
+        checkOutTime: '',
       }));
     }
   }, [isOpen, initialData]);
@@ -63,9 +83,9 @@ const NewBookingModal = ({ isOpen, onClose, initialData, accommodations, onAddBo
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className="relative w-full max-w-2xl bg-surface rounded-[32px] overflow-hidden shadow-2xl border border-on-surface/5"
+        className="relative w-full max-w-5xl bg-surface rounded-[32px] overflow-hidden shadow-2xl border border-on-surface/5"
       >
-        <div className="p-8 lg:p-12">
+        <div className="p-6 lg:p-10 max-h-[85vh] overflow-y-auto">
           <div className="flex justify-between items-start mb-10">
             <div>
               <h2 className="font-headline font-medium text-4xl text-on-surface tracking-tight">New Booking</h2>
@@ -77,7 +97,7 @@ const NewBookingModal = ({ isOpen, onClose, initialData, accommodations, onAddBo
           </div>
 
           <form className="space-y-8" onSubmit={handleSubmit}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="grid grid-cols-2 gap-6">
               <div className="space-y-3">
                 <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-on-surface-variant ml-1">Guest Name</label>
                 <input
@@ -90,14 +110,46 @@ const NewBookingModal = ({ isOpen, onClose, initialData, accommodations, onAddBo
                 />
               </div>
               <div className="space-y-3">
-                <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-on-surface-variant ml-1">Number of Guests</label>
+                <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-on-surface-variant ml-1">Contact Number</label>
+                <input
+                  type="text"
+                  placeholder="e.g. 0917 123 4567"
+                  className="w-full bg-surface-container border border-transparent focus:border-primary/30 focus:ring-4 focus:ring-primary/5 rounded-2xl px-6 py-4 text-sm transition-all duration-300"
+                  value={formData.contactNumber}
+                  onChange={e => setFormData({ ...formData, contactNumber: e.target.value })}
+                />
+              </div>
+              <div className="space-y-3 col-span-2">
+                <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-on-surface-variant ml-1">Address</label>
+                <input
+                  type="text"
+                  placeholder="Full address"
+                  className="w-full bg-surface-container border border-transparent focus:border-primary/30 focus:ring-4 focus:ring-primary/5 rounded-2xl px-6 py-4 text-sm transition-all duration-300"
+                  value={formData.address}
+                  onChange={e => setFormData({ ...formData, address: e.target.value })}
+                />
+              </div>
+              <div className="space-y-3">
+                <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-on-surface-variant ml-1">No. of Adult Guest</label>
                 <input
                   type="number"
-                  placeholder="e.g. 4"
+                  min={1}
+                  placeholder="e.g. 2"
                   className="w-full bg-surface-container border border-transparent focus:border-primary/30 focus:ring-4 focus:ring-primary/5 rounded-2xl px-6 py-4 text-sm transition-all duration-300"
-                  value={formData.pax}
-                  onChange={e => setFormData({ ...formData, pax: e.target.value })}
+                  value={formData.adultCount}
+                  onChange={e => setFormData({ ...formData, adultCount: e.target.value })}
                   required
+                />
+              </div>
+              <div className="space-y-3">
+                <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-on-surface-variant ml-1">No. of Minor Guest</label>
+                <input
+                  type="number"
+                  min={0}
+                  placeholder="e.g. 1"
+                  className="w-full bg-surface-container border border-transparent focus:border-primary/30 focus:ring-4 focus:ring-primary/5 rounded-2xl px-6 py-4 text-sm transition-all duration-300"
+                  value={formData.minorCount}
+                  onChange={e => setFormData({ ...formData, minorCount: e.target.value })}
                 />
               </div>
               <div className="space-y-3">
@@ -163,6 +215,79 @@ const NewBookingModal = ({ isOpen, onClose, initialData, accommodations, onAddBo
                   className="w-full bg-surface-container border border-transparent focus:border-primary/30 focus:ring-4 focus:ring-primary/5 rounded-2xl px-6 py-4 text-sm transition-all duration-300"
                   value={formData.eta}
                   onChange={e => setFormData({ ...formData, eta: e.target.value })}
+                />
+              </div>
+              <div className="space-y-3">
+                <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-on-surface-variant ml-1">Check-out Date</label>
+                <input
+                  type="date"
+                  className="w-full bg-surface-container border border-transparent focus:border-primary/30 focus:ring-4 focus:ring-primary/5 rounded-2xl px-6 py-4 text-sm transition-all duration-300"
+                  value={formData.checkOutDate}
+                  onChange={e => setFormData({ ...formData, checkOutDate: e.target.value })}
+                />
+              </div>
+              <div className="space-y-3">
+                <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-on-surface-variant ml-1">Check-out Time</label>
+                <input
+                  type="time"
+                  className="w-full bg-surface-container border border-transparent focus:border-primary/30 focus:ring-4 focus:ring-primary/5 rounded-2xl px-6 py-4 text-sm transition-all duration-300"
+                  value={formData.checkOutTime}
+                  onChange={e => setFormData({ ...formData, checkOutTime: e.target.value })}
+                />
+              </div>
+              <div className="space-y-3">
+                <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-on-surface-variant ml-1">Amount Paid / Reservation</label>
+                <input
+                  type="number"
+                  min={0}
+                  placeholder="e.g. 500"
+                  className="w-full bg-surface-container border border-transparent focus:border-primary/30 focus:ring-4 focus:ring-primary/5 rounded-2xl px-6 py-4 text-sm transition-all duration-300"
+                  value={formData.amountPaid}
+                  onChange={e => setFormData({ ...formData, amountPaid: e.target.value })}
+                />
+              </div>
+              <div className="space-y-3">
+                <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-on-surface-variant ml-1">Mode of Payment</label>
+                <select
+                  className="w-full bg-surface-container border border-transparent focus:border-primary/30 focus:ring-4 focus:ring-primary/5 rounded-2xl px-6 py-4 text-sm transition-all duration-300 appearance-none"
+                  value={formData.paymentMode}
+                  onChange={e => setFormData({ ...formData, paymentMode: e.target.value })}
+                >
+                  <option value="cash">Cash</option>
+                  <option value="check">Check</option>
+                  <option value="bank transfer">Bank transfer</option>
+                  <option value="gcash">GCash</option>
+                  <option value="mobile banking">Mobile banking</option>
+                </select>
+              </div>
+              <div className="space-y-3">
+                <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-on-surface-variant ml-1">Ref. No.</label>
+                <input
+                  type="text"
+                  placeholder="Reference number"
+                  className="w-full bg-surface-container border border-transparent focus:border-primary/30 focus:ring-4 focus:ring-primary/5 rounded-2xl px-6 py-4 text-sm transition-all duration-300"
+                  value={formData.referenceNo}
+                  onChange={e => setFormData({ ...formData, referenceNo: e.target.value })}
+                />
+              </div>
+              <div className="space-y-3 col-span-2">
+                <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-on-surface-variant ml-1">Request</label>
+                <textarea
+                  rows={2}
+                  placeholder="Special requests"
+                  className="w-full bg-surface-container border border-transparent focus:border-primary/30 focus:ring-4 focus:ring-primary/5 rounded-2xl px-6 py-4 text-sm transition-all duration-300 resize-none"
+                  value={formData.request}
+                  onChange={e => setFormData({ ...formData, request: e.target.value })}
+                />
+              </div>
+              <div className="space-y-3 col-span-2">
+                <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-on-surface-variant ml-1">Remarks</label>
+                <textarea
+                  rows={2}
+                  placeholder="Additional notes"
+                  className="w-full bg-surface-container border border-transparent focus:border-primary/30 focus:ring-4 focus:ring-primary/5 rounded-2xl px-6 py-4 text-sm transition-all duration-300 resize-none"
+                  value={formData.remarks}
+                  onChange={e => setFormData({ ...formData, remarks: e.target.value })}
                 />
               </div>
             </div>

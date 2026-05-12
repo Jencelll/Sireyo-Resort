@@ -14,14 +14,22 @@ class Booking extends Model
         'accommodation_id',
         'type',
         'pax',
+        'adult_count',
         'minor_count',
+        'contact_number',
+        'address',
         'advance_payment',
+        'payment_mode',
+        'reference_no',
+        'request',
+        'remarks',
         'status',
         'payment_status',
         'eta',
         'is_walk_in',
         'check_in_date',
         'check_out_date',
+        'check_out_time',
     ];
 
     public function accommodation()

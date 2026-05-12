@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   LayoutDashboard, CalendarDays, Users, BarChart3, Settings, LogOut, Search, Bell, MapPin, ShoppingCart, X, Menu, Plus, HelpCircle, Globe, User, ShieldCheck
@@ -22,10 +22,17 @@ import LoginPage from './views/login';
 
 import TopNavItem from './components/TopNavItem';
 import NewBookingModal from './components/NewBookingModal';
+import CheckoutModal from './components/CheckoutModal';
 
-import { Guest, Accommodation, ExtensionFee } from './types';
+import { Guest, Accommodation, ExtensionFee, Booking } from './types';
 import { ACCOMMODATIONS, EXTENSION_FEES } from './constants';
 import { createBooking, fetchAccommodations, fetchGuests, checkoutBooking } from './lib/api';
+
+interface ToastMessage {
+  id: string;
+  title: string;
+  message: string;
+}
 
 const App = () => {
   const [currentView, setCurrentView] = useState<'home' | 'dashboard' | 'reservations' | 'calendar' | 'grounds' | 'guests' | 'rentals' | 'reports' | 'settings'>('home');
@@ -37,6 +44,7 @@ const App = () => {
 
   const [isNewBookingModalOpen, setIsNewBookingModalOpen] = useState(false);
   const [modalInitialData, setModalInitialData] = useState<any>(undefined);
+  const [checkoutModal, setCheckoutModal] = useState<{ roomId: string; booking: Booking } | null>(null);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
 
@@ -48,6 +56,8 @@ const App = () => {
 
   const [accommodations, setAccommodations] = useState<Accommodation[]>(ACCOMMODATIONS);
   const [extensionFees, setExtensionFees] = useState<ExtensionFee[]>(EXTENSION_FEES);
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const notifiedCheckoutIds = useRef(new Set<string>());
 
   const formatDate = (date: Date) => {
     const year = date.getFullYear();
@@ -83,6 +93,45 @@ const App = () => {
     loadGuests();
   }, []);
 
+  useEffect(() => {
+    const notifyUpcomingCheckouts = () => {
+      const now = Date.now();
+      const upcomingWindowMs = 30 * 60 * 1000;
+
+      const allBookings = accommodations.flatMap(acc => {
+        const bookings = [acc.daytourBooking, acc.overnightBooking, acc.extendedBooking].filter(Boolean) as Booking[];
+        return bookings.map(booking => ({ booking, accommodationName: acc.name }));
+      });
+
+      allBookings.forEach(({ booking, accommodationName }) => {
+        if (!booking.checkOutDate || !booking.checkOutTime) return;
+        if (notifiedCheckoutIds.current.has(booking.id)) return;
+
+        const checkOutAt = new Date(`${booking.checkOutDate}T${booking.checkOutTime}:00`).getTime();
+        const timeRemaining = checkOutAt - now;
+        if (timeRemaining > 0 && timeRemaining <= upcomingWindowMs) {
+          const displayTime = new Date(checkOutAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+          const toastId = `${booking.id}-${checkOutAt}`;
+
+          setToasts(prev => [...prev, {
+            id: toastId,
+            title: 'Checkout due soon',
+            message: `${booking.guestName} in ${accommodationName} ends at ${displayTime}.`,
+          }]);
+
+          notifiedCheckoutIds.current.add(booking.id);
+          setTimeout(() => {
+            setToasts(prev => prev.filter(toast => toast.id !== toastId));
+          }, 6000);
+        }
+      });
+    };
+
+    notifyUpcomingCheckouts();
+    const intervalId = window.setInterval(notifyUpcomingCheckouts, 60000);
+    return () => window.clearInterval(intervalId);
+  }, [accommodations]);
+
   const handleOpenNewBooking = (initialData?: any, type?: string) => {
     if (typeof initialData === 'string') {
       setModalInitialData({ roomId: initialData, type });
@@ -100,6 +149,17 @@ const App = () => {
     setExtensionFees(extensionFees.map(fee => fee.id === id ? { ...fee, [field]: value } : fee));
   };
 
+  const handleAddExtensionFee = () => {
+    const newFee: ExtensionFee = {
+      id: `ef-${Date.now()}`,
+      accommodation: 'New Item',
+      perHour: 0,
+      dayTourExtension: 0,
+      overnightExtension: 0,
+    };
+    setExtensionFees(prev => [newFee, ...prev]);
+  };
+
   const handleUpdateGuest = (id: string, field: keyof Guest, value: any) => {
     setGuests(guests.map(guest => guest.id === id ? { ...guest, [field]: value } : guest));
   };
@@ -108,17 +168,26 @@ const App = () => {
     setGuests(guests.filter(guest => guest.id !== id));
   };
 
-  const handleCheckoutGuest = async (roomId: string, bookingId: string, bookingType: 'DAYTOUR' | 'OVERNIGHT' | 'EXTENDED STAY') => {
+  const handleRequestCheckout = (roomId: string, booking: Booking) => {
+    setCheckoutModal({ roomId, booking });
+  };
+
+  const handleCheckoutGuest = async (
+    roomId: string,
+    booking: Booking,
+    checkOutDate?: string,
+    checkOutTime?: string
+  ) => {
     // 1. Optimistic UI update for immediate feedback
     setAccommodations(prevAccommodations => 
       prevAccommodations.map(acc => {
         if (acc.id === roomId) {
           const accCopy = { ...acc };
-          if (bookingType === 'DAYTOUR' && accCopy.daytourBooking?.id === bookingId) {
+          if (booking.type === 'DAYTOUR' && accCopy.daytourBooking?.id === booking.id) {
              accCopy.daytourBooking = undefined;
-          } else if (bookingType === 'OVERNIGHT' && accCopy.overnightBooking?.id === bookingId) {
+          } else if (booking.type === 'OVERNIGHT' && accCopy.overnightBooking?.id === booking.id) {
              accCopy.overnightBooking = undefined;
-          } else if (bookingType === 'EXTENDED STAY' && accCopy.extendedBooking?.id === bookingId) {
+          } else if (booking.type === 'EXTENDED STAY' && accCopy.extendedBooking?.id === booking.id) {
              accCopy.extendedBooking = undefined;
           }
           return accCopy;
@@ -129,7 +198,7 @@ const App = () => {
 
     try {
       // 2. Perform checkout in background
-      await checkoutBooking(bookingId);
+      await checkoutBooking(booking.id, { checkOutDate, checkOutTime });
       
       // 3. Reload from backend to ensure full synchronization
       loadAccommodations(selectedDate);
@@ -364,15 +433,29 @@ const App = () => {
             onAddBooking={async (data) => {
               const isWalkIn = data.bookingSource === 'WALK_IN';
               const formattedEta = data.eta ? new Date(`1970-01-01T${data.eta}`).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : undefined;
+              const adultCount = Number(data.adultCount || 0);
+              const minorCount = Number(data.minorCount || 0);
+              const pax = adultCount + minorCount;
               
               await createBooking({
                 guestName: data.guestName,
-                pax: Number(data.pax),
+                pax,
                 type: data.type,
                 accommodationId: data.roomId,
                 isWalkIn,
                 checkInDate: data.date,
                 eta: formattedEta,
+                checkOutDate: data.checkOutDate || undefined,
+                checkOutTime: data.checkOutTime || undefined,
+                contactNumber: data.contactNumber || undefined,
+                address: data.address || undefined,
+                adultCount,
+                minorCount,
+                amountPaid: data.amountPaid || undefined,
+                paymentMode: data.paymentMode || undefined,
+                referenceNo: data.referenceNo || undefined,
+                request: data.request || undefined,
+                remarks: data.remarks || undefined,
               });
 
               await loadAccommodations(selectedDate);
@@ -380,6 +463,44 @@ const App = () => {
               setIsNewBookingModalOpen(false);
             }}
           />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {checkoutModal && (
+          <CheckoutModal
+            isOpen={!!checkoutModal}
+            booking={checkoutModal.booking}
+            onClose={() => setCheckoutModal(null)}
+            onConfirm={async (payload) => {
+              await handleCheckoutGuest(
+                checkoutModal.roomId,
+                checkoutModal.booking,
+                payload.checkOutDate,
+                payload.checkOutTime
+              );
+              setCheckoutModal(null);
+            }}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {toasts.length > 0 && (
+          <div className="fixed top-6 right-6 z-[130] flex flex-col gap-3">
+            {toasts.map(toast => (
+              <motion.div
+                key={toast.id}
+                initial={{ opacity: 0, x: 30 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 30 }}
+                className="bg-surface border border-on-surface/10 shadow-2xl rounded-2xl px-5 py-4 w-[280px]"
+              >
+                <p className="text-[10px] font-bold uppercase tracking-widest text-primary">{toast.title}</p>
+                <p className="text-sm text-on-surface mt-1">{toast.message}</p>
+              </motion.div>
+            ))}
+          </div>
         )}
       </AnimatePresence>
 
@@ -443,7 +564,7 @@ const App = () => {
             </motion.div>
           ) : currentView === 'reservations' ? (
             <motion.div key="reservations" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.3 }} className="flex-1 overflow-y-auto">
-              <ReservationGrid accommodations={accommodations} onNewBooking={handleOpenNewBooking} onViewGrounds={() => setCurrentView('grounds')} onCheckoutGuest={handleCheckoutGuest} selectedDate={selectedDate} onDateChange={setSelectedDate} />
+              <ReservationGrid accommodations={accommodations} onNewBooking={handleOpenNewBooking} onViewGrounds={() => setCurrentView('grounds')} onCheckoutGuest={handleRequestCheckout} selectedDate={selectedDate} onDateChange={setSelectedDate} />
             </motion.div>
           ) : currentView === 'calendar' ? (
             <motion.div key="calendar" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.3 }} className="flex-1 overflow-y-auto">
@@ -475,7 +596,7 @@ const App = () => {
             </motion.div>
           ) : currentView === 'settings' ? (
             <motion.div key="settings" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.3 }} className="flex-1 overflow-y-auto">
-              <SettingsView accommodations={accommodations} onUpdateAccommodation={handleUpdateAccommodation} extensionFees={extensionFees} onUpdateExtensionFee={handleUpdateExtensionFee} />
+              <SettingsView accommodations={accommodations} onUpdateAccommodation={handleUpdateAccommodation} extensionFees={extensionFees} onUpdateExtensionFee={handleUpdateExtensionFee} onAddExtensionFee={handleAddExtensionFee} />
             </motion.div>
           ) : null}
         </AnimatePresence>

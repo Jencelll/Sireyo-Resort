@@ -47,6 +47,17 @@ export interface CreateBookingPayload {
   isWalkIn: boolean;
   checkInDate: string;
   eta?: string;
+  checkOutDate?: string;
+  checkOutTime?: string;
+  contactNumber?: string;
+  address?: string;
+  adultCount?: number;
+  minorCount?: number;
+  amountPaid?: string;
+  paymentMode?: string;
+  referenceNo?: string;
+  request?: string;
+  remarks?: string;
 }
 
 export const createBooking = async (payload: CreateBookingPayload) => {
@@ -63,6 +74,17 @@ export const createBooking = async (payload: CreateBookingPayload) => {
       is_walk_in: payload.isWalkIn,
       check_in_date: payload.checkInDate,
       eta: payload.eta,
+      check_out_date: payload.checkOutDate,
+      check_out_time: payload.checkOutTime,
+      contact_number: payload.contactNumber,
+      address: payload.address,
+      adult_count: payload.adultCount,
+      minor_count: payload.minorCount,
+      advance_payment: payload.amountPaid,
+      payment_mode: payload.paymentMode,
+      reference_no: payload.referenceNo,
+      request: payload.request,
+      remarks: payload.remarks,
     }),
   });
 
@@ -73,12 +95,19 @@ export const createBooking = async (payload: CreateBookingPayload) => {
   return response.json();
 };
 
-export const checkoutBooking = async (bookingId: string) => {
+export const checkoutBooking = async (
+  bookingId: string,
+  payload?: { checkOutDate?: string; checkOutTime?: string }
+) => {
   const response = await fetch(buildUrl(`/api/bookings/${bookingId}/checkout`), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
+    body: payload ? JSON.stringify({
+      check_out_date: payload.checkOutDate,
+      check_out_time: payload.checkOutTime,
+    }) : undefined,
   });
 
   if (!response.ok) {
