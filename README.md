@@ -1,8 +1,6 @@
 # Sireyo-Resort
 
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+
 
 Sireyo-Resort is an operations dashboard for resort staff. It centralizes reservations, guest records, accommodations, and reporting so the team can run daily operations from one place.
 
@@ -19,7 +17,6 @@ Sireyo-Resort is an operations dashboard for resort staff. It centralizes reserv
 2. The frontend calls the Laravel API to read and update bookings, guests, and accommodations.
 3. Laravel persists data to the database and enforces validation and business rules.
 4. Dashboards aggregate data for KPI cards and reports.
-5. Optional AI-assisted flows can use `GEMINI_API_KEY` if enabled in the frontend.
 
 ## Core Modules
 
