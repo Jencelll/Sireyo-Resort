@@ -1,0 +1,5 @@
+{
+  "name": "Sireyo Admin Dashboard",
+  "description": "A polished resort management dashboard for tracking occupancy, revenue, and guest arrivals.",
+  "requestFramePermissions": []
+}
