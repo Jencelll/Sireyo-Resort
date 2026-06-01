@@ -1,10 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Edit3, Check, Plus, Trash2, ShieldCheck, ShoppingCart, X } from 'lucide-react';
 import { RentalItem, RentalRecord, FeeItem } from '../types';
 import { RENTAL_ITEMS, CORKAGE_FEES, ELECTRICITY_CHARGES, INITIAL_RENTALS } from '../constants';
+import { 
+  fetchRentalItems, createRentalItem, updateRentalItem, deleteRentalItem, 
+  fetchRentals, createRental, returnRental 
+} from '../lib/api';
 
-const NewRentalModal = ({ isOpen, onClose, onAdd, items, initialItemId }: { isOpen: boolean, onClose: () => void, onAdd: (rental: Omit<RentalRecord, 'id' | 'rentedAt'>) => void, items: RentalItem[], initialItemId?: string | null }) => {
+const NewRentalModal = ({ isOpen, onClose, onAdd, items, initialItemId }: { isOpen: boolean, onClose: () => void, onAdd: (rental: any) => void, items: RentalItem[], initialItemId?: string | null }) => {
   const [guestName, setGuestName] = useState('');
   const [selectedItemId, setSelectedItemId] = useState(initialItemId || items[0]?.id || '');
   const [quantity, setQuantity] = useState(1);
@@ -46,14 +50,72 @@ const NewRentalModal = ({ isOpen, onClose, onAdd, items, initialItemId }: { isOp
 
 const RentalsView = () => {
   const [activeTab, setActiveTab] = useState<'inventory' | 'active' | 'fees'>('inventory');
-  const [rentals, setRentals] = useState<RentalRecord[]>(INITIAL_RENTALS);
-  const [inventory, setInventory] = useState<RentalItem[]>(RENTAL_ITEMS);
-  const [corkageFees, setCorkageFees] = useState<FeeItem[]>(CORKAGE_FEES);
-  const [electricityCharges, setElectricityCharges] = useState<FeeItem[]>(ELECTRICITY_CHARGES);
+  const [rentals, setRentals] = useState<RentalRecord[]>([]);
+  const [inventory, setInventory] = useState<RentalItem[]>([]);
+  const [corkageFees, setCorkageFees] = useState<FeeItem[]>([]);
+  const [electricityCharges, setElectricityCharges] = useState<FeeItem[]>([]);
   const [isEditingInventory, setIsEditingInventory] = useState(false);
   const [isEditingFees, setIsEditingFees] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [preselectedItemId, setPreselectedItemId] = useState<string | null>(null);
+
+  const loadData = async () => {
+    try {
+      const [itemsData, rentalsData] = await Promise.all([
+        fetchRentalItems(),
+        fetchRentals()
+      ]);
+      
+      let inv = itemsData.filter((i: any) => i.category === 'inventory').map((i: any) => ({
+        id: i.id.toString(), name: i.name, daytourPrice: i.daytour_price || 0, overnightPrice: i.overnight_price || 0
+      }));
+      let corkage = itemsData.filter((i: any) => i.category === 'corkage').map((i: any) => ({
+        id: i.id.toString(), name: i.name, price: i.price || 0, note: i.note || ''
+      }));
+      let electricity = itemsData.filter((i: any) => i.category === 'electricity').map((i: any) => ({
+        id: i.id.toString(), name: i.name, price: i.price || 0, note: i.note || ''
+      }));
+      
+      if (inv.length === 0 && corkage.length === 0 && electricity.length === 0) {
+        inv = RENTAL_ITEMS;
+        corkage = CORKAGE_FEES;
+        electricity = ELECTRICITY_CHARGES;
+      }
+      
+      setInventory(inv);
+      setCorkageFees(corkage);
+      setElectricityCharges(electricity);
+      
+      let fetchedRentals = rentalsData.map((r: any) => ({
+        id: r.id.toString(),
+        guestName: r.guest_name,
+        itemName: r.item_name,
+        quantity: r.quantity,
+        type: r.type,
+        totalPrice: r.total_price,
+        status: r.status,
+        rentedAt: r.created_at
+      }));
+
+      setRentals(fetchedRentals);
+    } catch (e) {
+      console.error('Failed to load rentals data', e);
+      if (inventory.length === 0 && corkageFees.length === 0 && electricityCharges.length === 0) {
+        setInventory(RENTAL_ITEMS);
+        setCorkageFees(CORKAGE_FEES);
+        setElectricityCharges(ELECTRICITY_CHARGES);
+      }
+      if (rentals.length === 0) {
+        setRentals([]);
+      }
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+    const interval = setInterval(loadData, 5000); // Poll every 5s
+    return () => clearInterval(interval);
+  }, []);
 
   const allIssuableItems: RentalItem[] = [
     ...inventory,
@@ -61,34 +123,114 @@ const RentalsView = () => {
     ...electricityCharges.map(f => ({ id: f.id, name: `[Electricity] ${f.name}`, daytourPrice: f.price, overnightPrice: f.price }))
   ];
 
-  const handleAddRental = (newRental: Omit<RentalRecord, 'id' | 'rentedAt'>) => {
-    const record: RentalRecord = { ...newRental, id: `rr-${Date.now()}`, rentedAt: new Date().toISOString() };
-    setRentals([record, ...rentals]);
-    setActiveTab('active');
+  const handleAddRental = async (newRental: any) => {
+    try {
+      await createRental({
+        guest_name: newRental.guestName,
+        item_name: newRental.itemName,
+        quantity: newRental.quantity,
+        type: newRental.type,
+        total_price: newRental.totalPrice,
+        status: newRental.status
+      });
+      loadData();
+      setActiveTab('active');
+    } catch (e) {
+      console.error('Failed to create rental', e);
+    }
   };
 
-  const handleReturn = (id: string) => setRentals(rentals.map(r => r.id === id ? { ...r, status: 'Returned' } : r));
+  const handleReturn = async (id: string) => {
+    try {
+      await returnRental(id);
+      loadData();
+    } catch (e) {
+      console.error('Failed to return rental', e);
+    }
+  };
+
   const openAddModal = (itemId?: string) => { if (itemId) setPreselectedItemId(itemId); setIsModalOpen(true); };
   
-  const handleUpdateFee = (type: 'corkage' | 'electricity', id: string, field: keyof FeeItem, value: string | number) => {
-    if (type === 'corkage') setCorkageFees(corkageFees.map(f => f.id === id ? { ...f, [field]: value } : f));
-    else setElectricityCharges(electricityCharges.map(f => f.id === id ? { ...f, [field]: value } : f));
+  const handleUpdateFee = async (type: 'corkage' | 'electricity', id: string, field: keyof FeeItem, value: string | number) => {
+    const isNew = id.startsWith('new-');
+    if (!isNew) {
+      const fieldMap: Record<string, string> = { price: 'price', note: 'note', name: 'name' };
+      try {
+        await updateRentalItem(id, { [fieldMap[field as string]]: value });
+        loadData();
+      } catch (e) { console.error('Failed to update fee', e); }
+    } else {
+      if (type === 'corkage') setCorkageFees(corkageFees.map(f => f.id === id ? { ...f, [field]: value } : f));
+      else setElectricityCharges(electricityCharges.map(f => f.id === id ? { ...f, [field]: value } : f));
+    }
+  };
+
+  const saveNewFee = async (type: 'corkage' | 'electricity', fee: FeeItem) => {
+    try {
+      await createRentalItem({
+        name: fee.name,
+        category: type,
+        price: fee.price,
+        note: fee.note
+      });
+      loadData();
+    } catch (e) { console.error('Failed to create fee', e); }
   };
 
   const handleAddFee = (type: 'corkage' | 'electricity') => {
-    const newFee: FeeItem = { id: `${type === 'corkage' ? 'cf' : 'ec'}-${Date.now()}`, name: 'New Item', price: 0 };
+    const newFee: FeeItem = { id: `new-${Date.now()}`, name: 'New Item', price: 0 };
     if (type === 'corkage') setCorkageFees([...corkageFees, newFee]);
     else setElectricityCharges([...electricityCharges, newFee]);
   };
 
-  const handleDeleteFee = (type: 'corkage' | 'electricity', id: string) => {
-    if (type === 'corkage') setCorkageFees(corkageFees.filter(f => f.id !== id));
-    else setElectricityCharges(electricityCharges.filter(f => f.id !== id));
+  const handleDeleteFee = async (type: 'corkage' | 'electricity', id: string) => {
+    if (id.startsWith('new-')) {
+      if (type === 'corkage') setCorkageFees(corkageFees.filter(f => f.id !== id));
+      else setElectricityCharges(electricityCharges.filter(f => f.id !== id));
+      return;
+    }
+    try {
+      await deleteRentalItem(id);
+      loadData();
+    } catch (e) { console.error('Failed to delete fee', e); }
   };
 
-  const handleUpdateInventory = (id: string, field: keyof RentalItem, value: string | number) => setInventory(inventory.map(item => item.id === id ? { ...item, [field]: value } : item));
-  const handleAddInventoryItem = () => setInventory([...inventory, { id: `ri-${Date.now()}`, name: 'New Equipment', daytourPrice: 0, overnightPrice: 0 }]);
-  const handleDeleteInventoryItem = (id: string) => setInventory(inventory.filter(item => item.id !== id));
+  const handleUpdateInventory = async (id: string, field: keyof RentalItem, value: string | number) => {
+    if (id.startsWith('new-')) {
+      setInventory(inventory.map(item => item.id === id ? { ...item, [field]: value } : item));
+      return;
+    }
+    const fieldMap: Record<string, string> = { name: 'name', daytourPrice: 'daytour_price', overnightPrice: 'overnight_price' };
+    try {
+      await updateRentalItem(id, { [fieldMap[field as string]]: value });
+      loadData();
+    } catch (e) { console.error('Failed to update inventory', e); }
+  };
+
+  const saveNewInventory = async (item: RentalItem) => {
+    try {
+      await createRentalItem({
+        name: item.name,
+        category: 'inventory',
+        daytour_price: item.daytourPrice,
+        overnight_price: item.overnightPrice
+      });
+      loadData();
+    } catch (e) { console.error('Failed to create inventory', e); }
+  };
+
+  const handleAddInventoryItem = () => setInventory([...inventory, { id: `new-${Date.now()}`, name: 'New Equipment', daytourPrice: 0, overnightPrice: 0 }]);
+  
+  const handleDeleteInventoryItem = async (id: string) => {
+    if (id.startsWith('new-')) {
+      setInventory(inventory.filter(item => item.id !== id));
+      return;
+    }
+    try {
+      await deleteRentalItem(id);
+      loadData();
+    } catch (e) { console.error('Failed to delete inventory', e); }
+  };
 
   return (
     <div className="space-y-8 p-6 lg:p-10 max-w-7xl mx-auto w-full">
@@ -100,7 +242,33 @@ const RentalsView = () => {
             <button onClick={() => setActiveTab('active')} className={`px-6 py-2.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all duration-300 ${activeTab === 'active' ? 'bg-primary text-on-surface shadow-lg shadow-primary/20' : 'text-on-surface-variant hover:text-on-surface'}`}>Active Rentals</button>
             <button onClick={() => setActiveTab('fees')} className={`px-6 py-2.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all duration-300 ${activeTab === 'fees' ? 'bg-primary text-on-surface shadow-lg shadow-primary/20' : 'text-on-surface-variant hover:text-on-surface'}`}>Fees & Corkage</button>
           </div>
-          {activeTab === 'inventory' ? <button onClick={() => setIsEditingInventory(!isEditingInventory)} className={`px-6 py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest transition-all flex items-center gap-2 ${isEditingInventory ? 'bg-tertiary text-on-tertiary shadow-lg shadow-tertiary/20' : 'bg-surface-container-highest text-on-surface hover:bg-on-surface/5'}`}>{isEditingInventory ? <Check size={16} /> : <Edit3 size={16} />} {isEditingInventory ? 'Save Changes' : 'Edit Inventory'}</button> : activeTab === 'fees' ? <button onClick={() => setIsEditingFees(!isEditingFees)} className={`px-6 py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest transition-all flex items-center gap-2 ${isEditingFees ? 'bg-tertiary text-on-tertiary shadow-lg shadow-tertiary/20' : 'bg-surface-container-highest text-on-surface hover:bg-on-surface/5'}`}>{isEditingFees ? <Check size={16} /> : <Edit3 size={16} />} {isEditingFees ? 'Save Changes' : 'Edit Fees'}</button> : <button onClick={() => openAddModal()} className="bg-primary text-on-surface px-6 py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest shadow-lg shadow-primary/20 flex items-center gap-2 hover:scale-105 transition-all"><Plus size={16} strokeWidth={3} /> New Rental</button>}
+          {activeTab === 'inventory' ? (
+            <div className="flex gap-2">
+              {!isEditingInventory && (
+                <button onClick={() => { setIsEditingInventory(true); handleAddInventoryItem(); }} className="bg-primary text-on-surface px-6 py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest shadow-lg shadow-primary/20 flex items-center gap-2 hover:scale-105 transition-all"><Plus size={16} strokeWidth={3} /> Add Item</button>
+              )}
+              <button onClick={() => {
+                if (isEditingInventory) {
+                  inventory.filter(i => i.id.startsWith('new-')).forEach(i => saveNewInventory(i));
+                }
+                setIsEditingInventory(!isEditingInventory);
+              }} className={`px-6 py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest transition-all flex items-center gap-2 ${isEditingInventory ? 'bg-tertiary text-on-tertiary shadow-lg shadow-tertiary/20' : 'bg-surface-container-highest text-on-surface hover:bg-on-surface/5'}`}>{isEditingInventory ? <Check size={16} /> : <Edit3 size={16} />} {isEditingInventory ? 'Save Changes' : 'Edit Inventory'}</button> 
+            </div>
+          ) : activeTab === 'fees' ? (
+            <div className="flex gap-2">
+              {!isEditingFees && (
+                <button onClick={() => { setIsEditingFees(true); handleAddFee('corkage'); }} className="bg-primary text-on-surface px-6 py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest shadow-lg shadow-primary/20 flex items-center gap-2 hover:scale-105 transition-all"><Plus size={16} strokeWidth={3} /> Add Fee</button>
+              )}
+              <button onClick={() => {
+                if (isEditingFees) {
+                  corkageFees.filter(f => f.id.startsWith('new-')).forEach(f => saveNewFee('corkage', f));
+                  electricityCharges.filter(f => f.id.startsWith('new-')).forEach(f => saveNewFee('electricity', f));
+                }
+                setIsEditingFees(!isEditingFees);
+              }} className={`px-6 py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest transition-all flex items-center gap-2 ${isEditingFees ? 'bg-tertiary text-on-tertiary shadow-lg shadow-tertiary/20' : 'bg-surface-container-highest text-on-surface hover:bg-on-surface/5'}`}>{isEditingFees ? <Check size={16} /> : <Edit3 size={16} />} {isEditingFees ? 'Save Changes' : 'Edit Fees'}</button> 
+            </div>
+          ) : 
+            <button onClick={() => openAddModal()} className="bg-primary text-on-surface px-6 py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest shadow-lg shadow-primary/20 flex items-center gap-2 hover:scale-105 transition-all"><Plus size={16} strokeWidth={3} /> New Rental</button>}
         </div>
       </div>
 

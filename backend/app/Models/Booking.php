@@ -11,6 +11,8 @@ class Booking extends Model
 
     protected $fillable = [
         'guest_id',
+        'contact_number',
+        'address',
         'accommodation_id',
         'type',
         'pax',
@@ -18,10 +20,21 @@ class Booking extends Model
         'advance_payment',
         'status',
         'payment_status',
+        'payment_method',
+        'reference_no',
         'eta',
+        'special_request',
+        'remarks',
         'is_walk_in',
         'check_in_date',
         'check_out_date',
+        'check_out_time',
+    ];
+
+    protected $casts = [
+        'check_in_date' => 'date',
+        'check_out_date' => 'date',
+        'is_walk_in' => 'boolean',
     ];
 
     public function accommodation()

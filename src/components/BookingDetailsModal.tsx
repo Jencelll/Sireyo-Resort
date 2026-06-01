@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { X, Users, Clock, Banknote, ShieldCheck } from 'lucide-react';
+import { X, Users, Clock, Banknote, ShieldCheck, CalendarDays } from 'lucide-react';
 import { Booking } from '../types';
 
 interface BookingDetailsModalProps {
@@ -22,6 +22,30 @@ export const BookingDetailsModal = ({ booking, onClose }: BookingDetailsModalPro
     return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
   };
 
+  const formatDate = (value?: string | null) => {
+    if (!value) return 'Not set';
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return value;
+    return parsed.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  };
+
+  const formatDateTime = (value?: string | null) => {
+    if (!value) return 'Not set';
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return value;
+    return parsed.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+  };
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
       <motion.div
@@ -35,9 +59,9 @@ export const BookingDetailsModal = ({ booking, onClose }: BookingDetailsModalPro
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className="relative w-full max-w-[480px] bg-surface rounded-[2.5rem] overflow-hidden shadow-2xl shadow-black/20 border border-white/10"
+        className="relative w-full max-w-[640px] bg-surface rounded-[2.5rem] overflow-hidden shadow-2xl shadow-black/20 border border-white/10"
       >
-        <div className="p-8">
+        <div className="p-8 sm:p-10">
           {/* Header Row */}
           <div className="flex justify-between items-start mb-8">
             <div className="flex items-center gap-4">
@@ -96,25 +120,89 @@ export const BookingDetailsModal = ({ booking, onClose }: BookingDetailsModalPro
             </div>
 
             {/* Grid Stats */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="p-5 bg-surface-container-lowest border border-on-surface/5 hover:border-on-surface/10 hover:shadow-md transition-all duration-300 rounded-[1.5rem] flex items-center gap-4">
-                <div className={`p-3 rounded-2xl ${theme.bg} ${theme.text}`}>
-                  <Users size={18} strokeWidth={2.5} />
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div className="p-5 bg-surface-container-lowest border border-on-surface/5 hover:border-on-surface/10 hover:shadow-md transition-all duration-300 rounded-[1.5rem] flex flex-col justify-center gap-2">
+                <div className={`w-8 h-8 rounded-xl ${theme.bg} ${theme.text} flex items-center justify-center`}>
+                  <Users size={16} strokeWidth={2.5} />
                 </div>
                 <div>
-                  <p className="text-[9px] font-bold uppercase tracking-widest text-on-surface-variant/60 mb-0.5">Guests</p>
+                  <p className="text-[9px] font-bold uppercase tracking-widest text-on-surface-variant/60 mb-0.5">Adults</p>
                   <p className="font-bold text-sm text-on-surface leading-none">{booking.pax} Pax</p>
                 </div>
               </div>
+
+              <div className="p-5 bg-surface-container-lowest border border-on-surface/5 hover:border-on-surface/10 hover:shadow-md transition-all duration-300 rounded-[1.5rem] flex flex-col justify-center gap-2">
+                <div className={`w-8 h-8 rounded-xl ${theme.bg} ${theme.text} flex items-center justify-center`}>
+                  <Users size={16} strokeWidth={2.5} />
+                </div>
+                <div>
+                  <p className="text-[9px] font-bold uppercase tracking-widest text-on-surface-variant/60 mb-0.5">Minors</p>
+                  <p className="font-bold text-sm text-on-surface leading-none">{booking.minorCount || 0} Minors</p>
+                </div>
+              </div>
               
-              <div className="p-5 bg-surface-container-lowest border border-on-surface/5 hover:border-on-surface/10 hover:shadow-md transition-all duration-300 rounded-[1.5rem] flex items-center gap-4">
-                <div className={`p-3 rounded-2xl ${theme.bg} ${theme.text}`}>
-                  <Clock size={18} strokeWidth={2.5} />
+              <div className="p-5 bg-surface-container-lowest border border-on-surface/5 hover:border-on-surface/10 hover:shadow-md transition-all duration-300 rounded-[1.5rem] flex flex-col justify-center gap-2">
+                <div className={`w-8 h-8 rounded-xl ${theme.bg} ${theme.text} flex items-center justify-center`}>
+                  <Clock size={16} strokeWidth={2.5} />
                 </div>
                 <div>
                   <p className="text-[9px] font-bold uppercase tracking-widest text-on-surface-variant/60 mb-0.5">Arrival</p>
                   <p className="font-bold text-sm text-on-surface leading-none">{booking.eta || 'Walk-in'}</p>
                 </div>
+              </div>
+
+              <div className="p-5 bg-surface-container-lowest border border-on-surface/5 hover:border-on-surface/10 hover:shadow-md transition-all duration-300 rounded-[1.5rem] flex flex-col justify-center gap-2">
+                <div className={`w-8 h-8 rounded-xl ${theme.bg} ${theme.text} flex items-center justify-center`}>
+                  <Banknote size={16} strokeWidth={2.5} />
+                </div>
+                <div>
+                  <p className="text-[9px] font-bold uppercase tracking-widest text-on-surface-variant/60 mb-0.5">Advance</p>
+                  <p className="font-bold text-sm text-on-surface leading-none">₱{booking.advancePayment || '0'}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="p-5 bg-surface-container-lowest border border-on-surface/5 hover:border-on-surface/10 hover:shadow-md transition-all duration-300 rounded-[1.5rem] flex flex-col gap-3">
+                <div className="flex items-center gap-2">
+                  <CalendarDays size={14} className={theme.text} />
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/60">Check-in</span>
+                </div>
+                <div>
+                  <p className="font-bold text-sm text-on-surface leading-none">{formatDate(booking.checkInDate)}</p>
+                  {booking.eta && booking.eta.toLowerCase() !== 'walk-in' && (
+                    <p className="text-[10px] font-bold text-on-surface-variant mt-1.5 flex items-center gap-1">
+                      <Clock size={10} /> {booking.eta}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="p-5 bg-surface-container-lowest border border-on-surface/5 hover:border-on-surface/10 hover:shadow-md transition-all duration-300 rounded-[1.5rem] flex flex-col gap-3">
+                <div className="flex items-center gap-2">
+                  <CalendarDays size={14} className={theme.text} />
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/60">Check-out</span>
+                </div>
+                <div>
+                  <p className="font-bold text-sm text-on-surface leading-none">{formatDate(booking.checkOutDate)}</p>
+                  {booking.checkOutTime ? (
+                    <p className="text-[10px] font-bold text-on-surface-variant mt-1.5 flex items-center gap-1">
+                      <Clock size={10} /> {booking.checkOutTime}
+                    </p>
+                  ) : (
+                    <p className="text-[10px] font-medium text-on-surface-variant/50 mt-1.5 flex items-center gap-1">
+                      <Clock size={10} /> No time set
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="p-5 bg-surface-container-lowest border border-on-surface/5 hover:border-on-surface/10 hover:shadow-md transition-all duration-300 rounded-[1.5rem] flex flex-col gap-3">
+                <div className="flex items-center gap-2">
+                  <Clock size={14} className={theme.text} />
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/60">Created</span>
+                </div>
+                <p className="font-bold text-sm text-on-surface leading-none">{formatDateTime(booking.createdAt)}</p>
               </div>
             </div>
             

@@ -13,16 +13,24 @@ class BookingController extends Controller
     {
         $data = $request->validate([
             'guest_name' => ['required', 'string', 'max:255'],
+            'contact_number' => ['nullable', 'string', 'max:255'],
+            'address' => ['nullable', 'string'],
             'pax' => ['required', 'integer', 'min:1'],
             'minor_count' => ['nullable', 'integer', 'min:0'],
             'type' => ['required', 'in:DAYTOUR,OVERNIGHT,EXTENDED STAY'],
             'accommodation_id' => ['required', 'integer', 'exists:accommodations,id'],
             'advance_payment' => ['nullable', 'string'],
             'payment_status' => ['nullable', 'in:Paid Adv.,No Adv.,Partial'],
+            'payment_method' => ['nullable', 'string', 'max:255'],
+            'reference_no' => ['nullable', 'string', 'max:255'],
             'status' => ['nullable', 'in:Checked In,Confirmed,Pending'],
             'eta' => ['nullable', 'string', 'max:50'],
+            'special_request' => ['nullable', 'string'],
+            'remarks' => ['nullable', 'string'],
             'is_walk_in' => ['nullable', 'boolean'],
             'check_in_date' => ['required', 'date'],
+            'check_out_date' => ['nullable', 'date'],
+            'check_out_time' => ['nullable', 'string', 'max:50'],
         ]);
 
         $accommodation = Accommodation::findOrFail($data['accommodation_id']);
@@ -36,17 +44,24 @@ class BookingController extends Controller
 
         $booking = Booking::create([
             'guest_id' => $guest->id,
+            'contact_number' => $data['contact_number'] ?? null,
+            'address' => $data['address'] ?? null,
             'accommodation_id' => $accommodation->id,
             'type' => $data['type'],
             'pax' => $data['pax'],
             'minor_count' => $data['minor_count'] ?? 0,
             'advance_payment' => $data['advance_payment'] ?? null,
             'payment_status' => $isWalkIn ? 'Paid Adv.' : ($data['payment_status'] ?? 'No Adv.'),
+            'payment_method' => $data['payment_method'] ?? null,
+            'reference_no' => $data['reference_no'] ?? null,
             'status' => $isWalkIn ? 'Checked In' : ($data['status'] ?? 'Confirmed'),
             'eta' => $isWalkIn ? 'Walk-in' : ($data['eta'] ?? null),
+            'special_request' => $data['special_request'] ?? null,
+            'remarks' => $data['remarks'] ?? null,
             'is_walk_in' => $isWalkIn,
             'check_in_date' => $data['check_in_date'],
-            'check_out_date' => null,
+            'check_out_date' => $data['check_out_date'] ?? null,
+            'check_out_time' => $data['check_out_time'] ?? null,
         ]);
 
         return response()->json([
@@ -61,6 +76,10 @@ class BookingController extends Controller
                 'eta' => $booking->eta,
                 'type' => $booking->type,
                 'isWalkIn' => (bool) $booking->is_walk_in,
+                'checkInDate' => $booking->check_in_date?->toDateString(),
+                'checkOutDate' => $booking->check_out_date?->toDateString(),
+                'checkOutTime' => $booking->check_out_time,
+                'createdAt' => $booking->created_at?->toDateTimeString(),
             ],
             'guest' => [
                 'id' => (string) $guest->id,
@@ -75,9 +94,8 @@ class BookingController extends Controller
     {
         $booking = Booking::findOrFail($id);
         
-        $booking->update([
-            'check_out_date' => now()->toDateString(),
-        ]);
+        // We no longer overwrite check_out_date, as it's used for planned checkout.
+        // The active state of a booking is determined by the guest's status.
 
         if ($booking->guest_id) {
             $guest = Guest::find($booking->guest_id);

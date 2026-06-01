@@ -16,7 +16,9 @@ class AccommodationController extends Controller
         $accommodations = Accommodation::orderBy('id')->get();
         $bookings = Booking::with('guest')
             ->whereDate('check_in_date', $date)
-            ->whereNull('check_out_date')
+            ->whereHas('guest', function ($q) {
+                $q->where('status', '!=', 'Checked Out');
+            })
             ->get()
             ->groupBy('accommodation_id');
 
@@ -39,6 +41,10 @@ class AccommodationController extends Controller
                     'eta' => $booking->eta,
                     'type' => $booking->type,
                     'isWalkIn' => (bool) $booking->is_walk_in,
+                    'checkInDate' => $booking->check_in_date?->toDateString(),
+                    'checkOutDate' => $booking->check_out_date?->toDateString(),
+                    'checkOutTime' => $booking->check_out_time,
+                    'createdAt' => $booking->created_at?->toDateTimeString(),
                 ];
             };
 

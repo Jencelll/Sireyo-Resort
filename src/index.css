@@ -72,3 +72,32 @@
   background: rgba(0, 0, 0, 0.2);
 }
 
+@media screen {
+  .print-only {
+    display: none !important;
+  }
+}
+
+@media print {
+  @page {
+    size: landscape;
+    margin: 0.5cm;
+  }
+  
+  body * {
+    visibility: hidden;
+  }
+  
+  .print-only, .print-only * {
+    visibility: visible;
+  }
+  
+  .print-only {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+}

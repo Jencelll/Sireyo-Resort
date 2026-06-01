@@ -40,13 +40,18 @@ const App = () => {
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
 
-  const [guests, setGuests] = useState<Guest[]>([
-    { id: '1', name: 'Marcus Chen', room: 'Cottage 1', guests: 2, type: 'OVERNIGHT', status: 'In-House', image: 'https://i.pravatar.cc/150?u=1' },
-    { id: '2', name: 'Sarah Williams', room: 'Tent 1', guests: 4, type: 'DAYTOUR', status: 'Upcoming', image: 'https://i.pravatar.cc/150?u=2' },
-    { id: '3', name: 'James Wilson', room: 'Lubi 2', guests: 1, type: 'OVERNIGHT', status: 'Checked Out', image: 'https://i.pravatar.cc/150?u=3' },
-  ]);
+  const [guests, setGuests] = useState<Guest[]>([]);
 
-  const [accommodations, setAccommodations] = useState<Accommodation[]>(ACCOMMODATIONS);
+  const stripDemoBookings = (items: Accommodation[]) =>
+    items.map((acc) => ({
+      ...acc,
+      daytourBooking: undefined,
+      overnightBooking: undefined,
+      extendedBooking: undefined,
+    }));
+
+  const [accommodations, setAccommodations] = useState<Accommodation[]>(stripDemoBookings(ACCOMMODATIONS));
+  const [accommodationsError, setAccommodationsError] = useState<string | null>(null);
   const [extensionFees, setExtensionFees] = useState<ExtensionFee[]>(EXTENSION_FEES);
 
   const formatDate = (date: Date) => {
@@ -58,11 +63,13 @@ const App = () => {
 
   const loadAccommodations = async (date: Date) => {
     try {
+      setAccommodationsError(null);
       const data = await fetchAccommodations(formatDate(date));
       setAccommodations(data);
     } catch (error) {
       console.error(error);
-      setAccommodations(ACCOMMODATIONS);
+      setAccommodationsError('Unable to load accommodations from the server. Showing accommodations without bookings.');
+      setAccommodations(prev => (prev.length ? prev : stripDemoBookings(ACCOMMODATIONS)));
     }
   };
 
@@ -82,6 +89,17 @@ const App = () => {
   useEffect(() => {
     loadGuests();
   }, []);
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      loadAccommodations(selectedDate);
+      loadGuests();
+    }, 10000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [selectedDate]);
 
   const handleOpenNewBooking = (initialData?: any, type?: string) => {
     if (typeof initialData === 'string') {
@@ -136,8 +154,7 @@ const App = () => {
       loadGuests();
     } catch (err) {
       console.error('Checkout failed', err);
-      // Revert optimistic update on failure by reloading true state
-      loadAccommodations(selectedDate);
+      // Keep optimistic UI if refresh fails to prevent immediate rollback
     }
   };
 
@@ -361,18 +378,34 @@ const App = () => {
             onClose={() => setIsNewBookingModalOpen(false)} 
             initialData={modalInitialData}
             accommodations={accommodations}
+            accommodationsError={accommodationsError}
             onAddBooking={async (data) => {
               const isWalkIn = data.bookingSource === 'WALK_IN';
               const formattedEta = data.eta ? new Date(`1970-01-01T${data.eta}`).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : undefined;
+              const accommodationId = data.roomId;
+
+              if (!accommodationId) {
+                throw new Error('Please select an accommodation.');
+              }
               
               await createBooking({
                 guestName: data.guestName,
+                contactNumber: data.contactNumber,
+                address: data.address,
                 pax: Number(data.pax),
+                minorCount: data.minorCount ? Number(data.minorCount) : undefined,
                 type: data.type,
-                accommodationId: data.roomId,
+                accommodationId: String(accommodationId),
                 isWalkIn,
+                advancePayment: data.advancePayment,
+                paymentMethod: data.paymentMethod,
+                referenceNo: data.referenceNo,
                 checkInDate: data.date,
+                checkOutDate: (data as any).checkOutDate,
+                checkOutTime: (data as any).checkOutTime,
                 eta: formattedEta,
+                specialRequest: data.specialRequest,
+                remarks: data.remarks,
               });
 
               await loadAccommodations(selectedDate);
@@ -443,7 +476,7 @@ const App = () => {
             </motion.div>
           ) : currentView === 'reservations' ? (
             <motion.div key="reservations" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.3 }} className="flex-1 overflow-y-auto">
-              <ReservationGrid accommodations={accommodations} onNewBooking={handleOpenNewBooking} onViewGrounds={() => setCurrentView('grounds')} onCheckoutGuest={handleCheckoutGuest} selectedDate={selectedDate} onDateChange={setSelectedDate} />
+              <ReservationGrid accommodations={accommodations} accommodationsError={accommodationsError} onReload={() => loadAccommodations(selectedDate)} onNewBooking={handleOpenNewBooking} onViewGrounds={() => setCurrentView('grounds')} onCheckoutGuest={handleCheckoutGuest} selectedDate={selectedDate} onDateChange={setSelectedDate} />
             </motion.div>
           ) : currentView === 'calendar' ? (
             <motion.div key="calendar" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.3 }} className="flex-1 overflow-y-auto">

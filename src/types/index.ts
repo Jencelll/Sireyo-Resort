@@ -37,6 +37,10 @@ export interface Booking {
   eta?: string;
   type: 'DAYTOUR' | 'OVERNIGHT' | 'EXTENDED STAY';
   isWalkIn?: boolean;
+  checkInDate?: string;
+  checkOutDate?: string | null;
+  checkOutTime?: string | null;
+  createdAt?: string;
 }
 
 export interface RentalItem {

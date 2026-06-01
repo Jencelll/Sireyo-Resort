@@ -34,54 +34,54 @@ export const BookingCard = ({ booking, onCheckout, onClick }: { booking: Booking
       animate={{ opacity: 1, scale: 1, y: 0 }}
       whileHover={{ y: -2 }}
       onClick={onClick}
-      className={`relative p-4 lg:p-5 rounded-2xl ${bgColor} border ${borderColor} flex flex-col gap-3 h-full min-h-[100px] lg:min-h-[120px] group cursor-pointer transition-all duration-300`}
+      className={`relative p-5 lg:p-6 rounded-3xl ${bgColor} border ${borderColor} flex flex-col gap-4 h-full min-h-[130px] lg:min-h-[160px] group cursor-pointer transition-all duration-300`}
     >
       <div className="flex justify-between items-start">
         <div className="flex items-center gap-2">
-          <span className={`px-2.5 py-1 rounded-lg text-[8px] font-bold tracking-widest uppercase ${accentColor} text-on-surface shadow-sm`}>
+          <span className={`px-3 py-1.5 rounded-lg text-[9px] font-bold tracking-widest uppercase ${accentColor} text-on-surface shadow-sm`}>
             {booking.type}
           </span>
           {booking.status && (
-            <span className="flex items-center gap-1.5 text-[8px] font-bold uppercase tracking-widest text-on-surface-variant/60">
+            <span className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-widest text-on-surface-variant/60">
               <span className={`w-1.5 h-1.5 rounded-full ${booking.status === 'Checked In' ? 'bg-tertiary' : 'bg-primary'}`}></span>
               {booking.status}
             </span>
           )}
           {isWalkIn && (
-            <span className="px-2 py-0.5 rounded-md bg-secondary text-on-secondary text-[7px] font-black uppercase tracking-tighter animate-pulse">
+            <span className="px-2.5 py-1 rounded-md bg-secondary text-on-secondary text-[8px] font-black uppercase tracking-tighter animate-pulse">
               Walk-in
             </span>
           )}
           {isReservation && (
-            <span className="px-2 py-0.5 rounded-md bg-on-surface/10 text-on-surface text-[7px] font-black uppercase tracking-tighter">
+            <span className="px-2.5 py-1 rounded-md bg-on-surface/10 text-on-surface text-[8px] font-black uppercase tracking-tighter">
               Reservation
             </span>
           )}
         </div>
         {booking.eta && (
           <div className="flex flex-col items-end">
-            <span className="text-[8px] font-bold uppercase tracking-widest text-on-surface-variant/40">ETA</span>
-            <span className="text-[10px] font-bold text-on-surface-variant">{booking.eta}</span>
+            <span className="text-[9px] font-bold uppercase tracking-widest text-on-surface-variant/40">ETA</span>
+            <span className="text-[11px] font-bold text-on-surface-variant">{booking.eta}</span>
           </div>
         )}
       </div>
 
-      <div className="mt-1">
-        <p className="text-sm lg:text-base font-headline font-medium text-on-surface leading-tight group-hover:text-primary transition-colors">{booking.guestName}</p>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2">
+      <div className="mt-2">
+        <p className="text-base lg:text-lg font-headline font-medium text-on-surface leading-tight group-hover:text-primary transition-colors">{booking.guestName}</p>
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-3 mt-3">
           <div className="flex items-center gap-1.5">
-            <div className="w-5 h-5 rounded-md bg-on-surface/5 flex items-center justify-center">
-              <Users size={10} className="text-on-surface-variant" />
+            <div className="w-6 h-6 rounded-md bg-on-surface/5 flex items-center justify-center">
+              <Users size={12} className="text-on-surface-variant" />
             </div>
-            <span className="text-[10px] font-medium text-on-surface-variant">
+            <span className="text-[11px] font-medium text-on-surface-variant">
               {booking.pax} Pax {booking.minorCount ? `(${booking.minorCount}M)` : ''}
             </span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className={`w-5 h-5 rounded-md ${booking.paymentStatus === 'Paid Adv.' ? 'bg-tertiary/10' : 'bg-error/10'} flex items-center justify-center`}>
-              <Clock size={10} className={booking.paymentStatus === 'Paid Adv.' ? 'text-tertiary' : 'text-error'} />
+            <div className={`w-6 h-6 rounded-md ${booking.paymentStatus === 'Paid Adv.' ? 'bg-tertiary/10' : 'bg-error/10'} flex items-center justify-center`}>
+              <Clock size={12} className={booking.paymentStatus === 'Paid Adv.' ? 'text-tertiary' : 'text-error'} />
             </div>
-            <span className={`text-[10px] font-bold ${booking.paymentStatus === 'Paid Adv.' ? 'text-tertiary' : 'text-error'}`}>
+            <span className={`text-[11px] font-bold ${booking.paymentStatus === 'Paid Adv.' ? 'text-tertiary' : 'text-error'}`}>
               {booking.paymentStatus} {booking.advancePayment ? `₱${booking.advancePayment}` : ''}
             </span>
           </div>
@@ -89,12 +89,12 @@ export const BookingCard = ({ booking, onCheckout, onClick }: { booking: Booking
       </div>
 
       {isExtended && (
-        <div className="mt-auto flex justify-between items-center border-t border-on-surface/5 pt-3">
+        <div className="mt-auto flex justify-between items-center border-t border-on-surface/5 pt-4">
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-tertiary animate-pulse"></div>
-            <span className="text-[9px] font-bold uppercase tracking-widest text-on-surface-variant">Active Stay</span>
+            <span className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">Active Stay</span>
           </div>
-          <ChevronRight size={14} className="text-on-surface-variant/40 group-hover:text-primary transition-colors" />
+          <ChevronRight size={16} className="text-on-surface-variant/40 group-hover:text-primary transition-colors" />
         </div>
       )}
 
@@ -104,10 +104,11 @@ export const BookingCard = ({ booking, onCheckout, onClick }: { booking: Booking
             e.stopPropagation();
             onCheckout();
           }}
-          className="absolute right-3 top-3 p-2 rounded-xl bg-surface hover:bg-error/10 hover:text-error text-on-surface-variant opacity-0 transform scale-90 group-hover:opacity-100 group-hover:scale-100 transition-all duration-300 shadow-sm border border-on-surface/5 z-10 hidden lg:flex"
+          type="button"
+          className="absolute right-4 top-4 p-2.5 rounded-xl bg-surface hover:bg-error/10 hover:text-error text-on-surface-variant opacity-0 transform scale-90 group-hover:opacity-100 group-hover:scale-100 transition-all duration-300 shadow-sm border border-on-surface/5 z-10 hidden lg:flex"
           title="Check Out Guest"
         >
-          <LogOut size={14} />
+          <LogOut size={16} />
         </button>
       )}
     </motion.div>

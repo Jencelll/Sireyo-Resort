@@ -1,19 +1,16 @@
-Add-Type -AssemblyName System.Drawing
-$bmp = New-Object System.Drawing.Bitmap("E:\sireyo-admin-dashboard\sireyoicon.png")
-$iconHandle = $bmp.GetHicon()
-$icon = [System.Drawing.Icon]::FromHandle($iconHandle)
-$stream = New-Object System.IO.FileStream("E:\sireyo-admin-dashboard\sireyoicon.ico", [System.IO.FileMode]::Create)
-$icon.Save($stream)
-$stream.Close()
-$icon.Dispose()
-$bmp.Dispose()
-
 $WshShell = New-Object -comObject WScript.Shell
+$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $DesktopPath = [Environment]::GetFolderPath("Desktop")
-$Shortcut = $WshShell.CreateShortcut("$DesktopPath\Sireyo Dashboard.lnk")
-$Shortcut.TargetPath = "E:\sireyo-admin-dashboard\start-servers.bat"
-$Shortcut.WorkingDirectory = "E:\sireyo-admin-dashboard"
-$Shortcut.IconLocation = "E:\sireyo-admin-dashboard\sireyoicon.ico"
+$Shortcut = $WshShell.CreateShortcut((Join-Path $DesktopPath "Sireyo Dashboard.lnk"))
+$Shortcut.TargetPath = Join-Path $ScriptDir "start-servers.bat"
+$Shortcut.WorkingDirectory = $ScriptDir
+$IconPath = Join-Path $ScriptDir "sireyoicon-real.ico"
+if (-not (Test-Path $IconPath)) {
+	$IconPath = Join-Path $ScriptDir "sireyoicon.ico"
+}
+if (Test-Path $IconPath) {
+	$Shortcut.IconLocation = $IconPath
+}
 $Shortcut.Description = "Start Sireyo Admin Dashboard"
 $Shortcut.Save()
 

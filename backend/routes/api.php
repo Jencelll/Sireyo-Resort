@@ -9,6 +9,8 @@ use App\Http\Controllers\BookingController;
 use App\Http\Controllers\GuestController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\RentalItemController;
+use App\Http\Controllers\RentalController;
 
 Route::post('/login', function (Request $request) {
     $request->validate([
@@ -38,3 +40,12 @@ Route::get('/guests', [GuestController::class, 'index']);
 Route::post('/bookings', [BookingController::class, 'store']);
 Route::post('/bookings/{id}/checkout', [BookingController::class, 'checkout']);
 Route::get('/reports/analytics', [ReportController::class, 'getAnalytics']);
+
+Route::get('/rental-items', [RentalItemController::class, 'index']);
+Route::post('/rental-items', [RentalItemController::class, 'store']);
+Route::put('/rental-items/{id}', [RentalItemController::class, 'update']);
+Route::delete('/rental-items/{id}', [RentalItemController::class, 'destroy']);
+
+Route::get('/rentals', [RentalController::class, 'index']);
+Route::post('/rentals', [RentalController::class, 'store']);
+Route::post('/rentals/{id}/return', [RentalController::class, 'returnItem']);
