@@ -6,6 +6,7 @@ use App\Models\Accommodation;
 use App\Models\Booking;
 use App\Models\Guest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 
 class BookingController extends Controller
 {
@@ -16,10 +17,17 @@ class BookingController extends Controller
             'contact_number' => ['nullable', 'string', 'max:255'],
             'address' => ['nullable', 'string'],
             'pax' => ['required', 'integer', 'min:1'],
+            'adult_count' => ['nullable', 'integer', 'min:1'],
             'minor_count' => ['nullable', 'integer', 'min:0'],
             'type' => ['required', 'in:DAYTOUR,OVERNIGHT,EXTENDED STAY'],
             'accommodation_id' => ['required', 'integer', 'exists:accommodations,id'],
+            'contact_number' => ['nullable', 'string', 'max:50'],
+            'address' => ['nullable', 'string', 'max:255'],
             'advance_payment' => ['nullable', 'string'],
+            'payment_mode' => ['nullable', 'string', 'max:50'],
+            'reference_no' => ['nullable', 'string', 'max:100'],
+            'request' => ['nullable', 'string', 'max:1000'],
+            'remarks' => ['nullable', 'string', 'max:1000'],
             'payment_status' => ['nullable', 'in:Paid Adv.,No Adv.,Partial'],
             'payment_method' => ['nullable', 'string', 'max:255'],
             'reference_no' => ['nullable', 'string', 'max:255'],
@@ -42,15 +50,22 @@ class BookingController extends Controller
             'image' => 'https://picsum.photos/seed/' . urlencode($data['guest_name']) . '/100/100',
         ]);
 
-        $booking = Booking::create([
+        $bookingData = [
             'guest_id' => $guest->id,
             'contact_number' => $data['contact_number'] ?? null,
             'address' => $data['address'] ?? null,
             'accommodation_id' => $accommodation->id,
             'type' => $data['type'],
             'pax' => $data['pax'],
+            'adult_count' => $data['adult_count'] ?? null,
             'minor_count' => $data['minor_count'] ?? 0,
+            'contact_number' => $data['contact_number'] ?? null,
+            'address' => $data['address'] ?? null,
             'advance_payment' => $data['advance_payment'] ?? null,
+            'payment_mode' => $data['payment_mode'] ?? null,
+            'reference_no' => $data['reference_no'] ?? null,
+            'request' => $data['request'] ?? null,
+            'remarks' => $data['remarks'] ?? null,
             'payment_status' => $isWalkIn ? 'Paid Adv.' : ($data['payment_status'] ?? 'No Adv.'),
             'payment_method' => $data['payment_method'] ?? null,
             'reference_no' => $data['reference_no'] ?? null,
@@ -96,6 +111,19 @@ class BookingController extends Controller
         
         // We no longer overwrite check_out_date, as it's used for planned checkout.
         // The active state of a booking is determined by the guest's status.
+
+        $checkOutDate = $data['check_out_date'] ?? now()->toDateString();
+        $checkOutTime = $data['check_out_time'] ?? now()->format('H:i');
+        
+        $checkoutUpdate = [
+            'check_out_date' => $checkOutDate,
+        ];
+
+        if (Schema::hasColumn('bookings', 'check_out_time')) {
+            $checkoutUpdate['check_out_time'] = $checkOutTime;
+        }
+
+        $booking->update($checkoutUpdate);
 
         if ($booking->guest_id) {
             $guest = Guest::find($booking->guest_id);

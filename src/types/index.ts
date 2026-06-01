@@ -30,8 +30,15 @@ export interface Booking {
   id: string;
   guestName: string;
   pax: number;
+  adultCount?: number;
   minorCount?: number;
   advancePayment?: string;
+  contactNumber?: string;
+  address?: string;
+  paymentMode?: string;
+  referenceNo?: string;
+  request?: string;
+  remarks?: string;
   status: 'Checked In' | 'Confirmed' | 'Pending';
   paymentStatus: 'Paid Adv.' | 'No Adv.' | 'Partial';
   eta?: string;

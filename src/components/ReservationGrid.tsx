@@ -27,7 +27,7 @@ interface ReservationGridProps {
   onReload?: () => void;
   onNewBooking: (room?: string, type?: string) => void;
   onViewGrounds: () => void;
-  onCheckoutGuest?: (roomId: string, bookingId: string, bookingType: 'DAYTOUR' | 'OVERNIGHT' | 'EXTENDED STAY') => void;
+  onCheckoutGuest?: (roomId: string, booking: Booking) => void;
   selectedDate: Date;
   onDateChange: (date: Date) => void;
 }
@@ -344,7 +344,7 @@ const ReservationGrid = ({ accommodations, accommodationsError, onReload, onNewB
                     ) : acc.extendedBooking ? (
                       <BookingCard booking={acc.extendedBooking} onCheckout={() => onCheckoutGuest?.(acc.id, acc.extendedBooking!.id, 'EXTENDED STAY')} onClick={() => setSelectedBooking(acc.extendedBooking!)} />
                     ) : acc.daytourBooking ? (
-                      <BookingCard booking={acc.daytourBooking} onCheckout={() => onCheckoutGuest?.(acc.id, acc.daytourBooking!.id, 'DAYTOUR')} onClick={() => setSelectedBooking(acc.daytourBooking!)} />
+                      <BookingCard booking={acc.daytourBooking} onCheckout={() => onCheckoutGuest?.(acc.id, acc.daytourBooking!)} onClick={() => setSelectedBooking(acc.daytourBooking!)} />
                     ) : (
                       <EmptySlot type="Daytour" onBook={() => onNewBooking(acc.id, 'DAYTOUR')} />
                     )}
@@ -375,7 +375,7 @@ const ReservationGrid = ({ accommodations, accommodationsError, onReload, onNewB
                         <span className="text-[8px] font-bold uppercase tracking-widest text-on-surface-variant/20">Extended Stay</span>
                       </div>
                     ) : acc.overnightBooking ? (
-                      <BookingCard booking={acc.overnightBooking} onCheckout={() => onCheckoutGuest?.(acc.id, acc.overnightBooking!.id, 'OVERNIGHT')} onClick={() => setSelectedBooking(acc.overnightBooking!)} />
+                      <BookingCard booking={acc.overnightBooking} onCheckout={() => onCheckoutGuest?.(acc.id, acc.overnightBooking!)} onClick={() => setSelectedBooking(acc.overnightBooking!)} />
                     ) : (
                       <EmptySlot type="Overnight" onBook={() => onNewBooking(acc.id, 'OVERNIGHT')} />
                     )}

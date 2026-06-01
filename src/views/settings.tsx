@@ -4,7 +4,7 @@ import { Settings, Bed, Clock, Users, ShieldCheck, Plus, Trash2, UserPlus, X } f
 import { Accommodation, ExtensionFee } from '../types';
 import { getAccommodationIcon } from '../components/ReservationGrid';
 
-export const SettingsView = ({ accommodations, onUpdateAccommodation, extensionFees, onUpdateExtensionFee }: { accommodations: Accommodation[], onUpdateAccommodation: (id: string, field: keyof Accommodation, value: any) => void, extensionFees: ExtensionFee[], onUpdateExtensionFee: (id: string, field: keyof ExtensionFee, value: any) => void }) => {
+export const SettingsView = ({ accommodations, onUpdateAccommodation, extensionFees, onUpdateExtensionFee, onAddExtensionFee }: { accommodations: Accommodation[], onUpdateAccommodation: (id: string, field: keyof Accommodation, value: any) => void, extensionFees: ExtensionFee[], onUpdateExtensionFee: (id: string, field: keyof ExtensionFee, value: any) => void, onAddExtensionFee: () => void }) => {
   const [activeTab, setActiveTab] = useState('general');
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -152,8 +152,16 @@ export const SettingsView = ({ accommodations, onUpdateAccommodation, extensionF
           {activeTab === 'extension-fees' && (
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
               <div className="flex justify-between items-center mb-8">
-                <h3 className="text-xl font-headline font-medium text-on-surface">Extension Fees</h3>
-                <p className="text-[10px] text-on-surface-variant/60 font-medium uppercase tracking-widest">Manage additional stay charges</p>
+                <div>
+                  <h3 className="text-xl font-headline font-medium text-on-surface">Extension Fees</h3>
+                  <p className="text-[10px] text-on-surface-variant/60 font-medium uppercase tracking-widest">Manage additional stay charges</p>
+                </div>
+                <button
+                  onClick={onAddExtensionFee}
+                  className="flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-primary/20 transition-all"
+                >
+                  <Plus size={14} /> Add Item
+                </button>
               </div>
               <div className="overflow-x-auto -mx-8 lg:-mx-12 px-8 lg:px-12">
                 <table className="w-full text-left border-collapse">

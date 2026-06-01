@@ -152,13 +152,20 @@ export const createBooking = async (payload: CreateBookingPayload) => {
   return parseJsonResponse(response);
 };
 
-export const checkoutBooking = async (bookingId: string) => {
+export const checkoutBooking = async (
+  bookingId: string,
+  payload?: { checkOutDate?: string; checkOutTime?: string }
+) => {
   const response = await fetch(buildUrl(`/api/bookings/${bookingId}/checkout`), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
     },
+    body: payload ? JSON.stringify({
+      check_out_date: payload.checkOutDate,
+      check_out_time: payload.checkOutTime,
+    }) : undefined,
   });
 
   if (!response.ok) {
