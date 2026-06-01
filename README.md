@@ -1,5 +1,7 @@
 # Sireyo-Resort
 
+<img width="1919" height="863" alt="image" src="https://github.com/user-attachments/assets/248a50e2-79c9-42f1-a923-c2e448492464" />
+
 
 
 Sireyo-Resort is an operations dashboard for resort staff. It centralizes reservations, guest records, accommodations, and reporting so the team can run daily operations from one place.
